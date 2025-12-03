@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+    <script src='https://ssl.p.jwpcdn.com/player/v/8.26.9/jwplayer.js'></script>
+    <script>jwplayer.key="Y8nORY7CUY5RnlN/f8onh+AXI1ZWodkujMJAXBwpcAnDG5N4";</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #000;
+            color: #aaa;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* JWPlayer container */
+        .jwplayer-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 40vh;
+            z-index: 1000;
+            background-color: #000;
+        }
+        
+        /* Controls container */
+        .controls-container {
+            position: fixed;
+            top: 40vh;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px 0;
+            z-index: 999;
+            text-align: center;
+        }
+        
+        .button-controls {
+            display: inline-block;
+            padding: 12px 18px;
+            font-size: 16px;
+            background-color: #330066;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 8px;
+            min-width: 80px;
+        }
+        
+        .button-controls:hover {
+            background-color: #220048;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .button-controls:active {
+            background-color: #220048;
+            transform: translateY(1px);
+        }
+        
+        /* Drama name */
+        .drama-name {
+            position: fixed;
+            top: calc(40vh + 70px);
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 10px 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 998;
+        }
+        
+        /* Episodes container */
+        .episodes-container {
+            padding: 10px 0;
+            margin-top: 20vh; /* Space for the fixed video player, controls and drama name */
+            margin-bottom: 50px; /* Space for the footer */
+            display: flex;
+            justify-content: center;
+        }
+        
+        .episodes-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Single column for full-width buttons */
+            gap: 15px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .episode-button {
+            background-color: #000;
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            font-size: 16px;
+            margin: 0;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+            box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff0000;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .episode-button:hover {
+            background-color: #ff0000;
+            box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;
+            transform: scale(1.05);
+        }
+        
+        .episode-button.active {
+           background-color: #ff0000; 
+           box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;  
+        }
+        
+        /* Footer */
+        .footer {
+            padding: 10px 0;
+            background-color: #000;
+            color: #aaa;
+            width: 100%;
+            position: relative;
+            z-index: 1001;
+            text-align: center;
+        }
+        
+        /* Loading animation */
+        .loading-animation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+            margin: 20px 0;
+        }
+        
+        .cube {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate 10s infinite linear;
+        }
+        
+        .cube div {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.7;
+        }
+        
+        .front {
+            transform: translateZ(25px);
+            background-color: #12524B;
+        }
+        
+        .back {
+            transform: translateZ(-25px) rotateY(180deg);
+            background-color: #12524B;
+        }
+        
+        .right {
+            transform: rotateY(-270deg) translateX(25px);
+            transform-origin: top right;
+            background-color: #83C6F3;
+        }
+        
+        .left {
+            transform: rotateY(270deg) translateX(-25px);
+            transform-origin: center left;
+            background-color: #83C6F3;
+        }
+        
+        .top {
+            transform: rotateX(-270deg) translateY(-25px);
+            transform-origin: top center;
+            background-color: #FC0;
+        }
+        
+        .bottom {
+            transform: rotateX(270deg) translateY(25px);
+            transform-origin: bottom center;
+            background-color: #FC0;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotateX(0deg) rotateY(0deg); }
+            to { transform: rotateX(360deg) rotateY(360deg); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .jwplayer-container {
+                height: 35vh;
+            }
+            
+            .controls-container {
+                top: 35vh;
+            }
+            
+            .drama-name {
+                top: calc(35vh + 70px);
+            }
+            
+            .episodes-container {
+                margin-top: 25vh;
+            }
+            
+            .button-controls {
+                padding: 10px 14px;
+                font-size: 14px;
+                min-width: 70px;
+                margin: 0 5px;
+            }
+            
+            .episodes-grid {
+                gap: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .jwplayer-container {
+                height: 30vh;
+            }
+            
+            .controls-container {
+                top: 30vh;
+            }
+            
+            .drama-name {
+    position: fixed;
+    top: calc(40vh + 70px);
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #00ff00; /* Green color */
+    font-size: 20px;
+    font-weight: bold;
+    padding: 10px 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 998;
+}
+
+/* Responsive adjustments for drama name */
+@media (max-width: 768px) {
+    .drama-name {
+        top: calc(35vh + 70px);
+    }
+}
+
+@media (max-width: 480px) {
+    .drama-name {
+        top: calc(30vh + 50px);
+    }
+}
+            
+            .episodes-container {
+                margin-top: 27vh;
+            }
+            
+            .button-controls {
+                padding: 8px 10px;
+                font-size: 12px;
+                min-width: 40px;
+                margin: 0 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- JWPlayer container -->
+    <div class="jwplayer-container">
+        <div id='vplayer'></div>
+    </div>
+    
+    <!-- Controls container -->
+    <div class="controls-container">
+        <button type="button" class="button-controls" onclick="rwd15s()">
+            <i class="fas fa-fast-backward"></i> 15s
+        </button>
+        <button class="button-controls" onclick="rwd5s()">
+            <i class="fas fa-step-backward"></i> 5s
+        </button>
+        <button class="button-controls" onclick="playPause()">
+            <i class="fas fa-play" id="playPauseIcon"></i>
+        </button>
+        <button class="button-controls" onclick="toggleFullscreen()">
+            <i class="fas fa-expand"></i>
+        </button>
+        <button class="button-controls" onclick="fwd5s()">
+            5s <i class="fas fa-step-forward"></i>
+        </button>
+        <button class="button-controls" onclick="fwd15s()">
+            15s <i class="fas fa-fast-forward"></i>
+        </button>
+    </div>
+    
+    <!-- Drama name -->
+    <div class="drama-name" id="dramaName">
+       Dastan-Turkish-Urdu-Dubbed
+    </div>
+    
+    <!-- Loading animation -->
+    <div class="loading-animation">
+        <div class="cube">
+            <div class="front"></div>
+            <div class="back"></div>
+            <div class="right"></div>
+            <div class="left"></div>
+            <div class="top"></div>
+            <div class="bottom"></div>
+        </div>
+    </div>
+    
+    <!-- Episodes container -->
+    <div class="episodes-container">
+        <div class="episodes-grid">
+            <button class="episode-button" onclick="loadEpisode(1, 'DragonBallSuper - Episode 1', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E01/v0/prog_index.m3u8')">
+    Episode 1
+</button>
+<button class="episode-button" onclick="loadEpisode(2, 'DragonBallSuper - Episode 2', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E02/v0/prog_index.m3u8')">
+    Episode 2
+</button>
+<button class="episode-button" onclick="loadEpisode(3, 'DragonBallSuper - Episode 3', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E03/v0/prog_index.m3u8')">
+    Episode 3
+</button>
+<button class="episode-button" onclick="loadEpisode(4, 'DragonBallSuper - Episode 4', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E04/v0/prog_index.m3u8')">
+    Episode 4
+</button>
+<button class="episode-button" onclick="loadEpisode(5, 'DragonBallSuper - Episode 5', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E05/v0/prog_index.m3u8')">
+    Episode 5
+</button>
+<button class="episode-button" onclick="loadEpisode(6, 'DragonBallSuper - Episode 6', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E06/v0/prog_index.m3u8')">
+    Episode 6
+</button>
+<button class="episode-button" onclick="loadEpisode(7, 'DragonBallSuper - Episode 7', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E07/v0/prog_index.m3u8')">
+    Episode 7
+</button>
+<button class="episode-button" onclick="loadEpisode(8, 'DragonBallSuper - Episode 8', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E08/v0/prog_index.m3u8')">
+    Episode 8
+</button>
+<button class="episode-button" onclick="loadEpisode(9, 'DragonBallSuper - Episode 9', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E09/v0/prog_index.m3u8')">
+    Episode 9
+</button>
+<button class="episode-button" onclick="loadEpisode(10, 'DragonBallSuper - Episode 10', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E10/v0/prog_index.m3u8')">
+    Episode 10
+</button>
+<button class="episode-button" onclick="loadEpisode(11, 'DragonBallSuper - Episode 11', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E11/v0/prog_index.m3u8')">
+    Episode 11
+</button>
+<button class="episode-button" onclick="loadEpisode(12, 'DragonBallSuper - Episode 12', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E12/v0/prog_index.m3u8')">
+    Episode 12
+</button>
+<button class="episode-button" onclick="loadEpisode(13, 'DragonBallSuper - Episode 13', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E13/v0/prog_index.m3u8')">
+    Episode 13
+</button>
+<button class="episode-button" onclick="loadEpisode(14, 'DragonBallSuper - Episode 14', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E14/v0/prog_index.m3u8')">
+    Episode 14
+</button>
+<button class="episode-button" onclick="loadEpisode(15, 'DragonBallSuper - Episode 15', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E15/v0/prog_index.m3u8')">
+    Episode 15
+</button>
+<button class="episode-button" onclick="loadEpisode(16, 'DragonBallSuper - Episode 16', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E16/v0/prog_index.m3u8')">
+    Episode 16
+</button>
+<button class="episode-button" onclick="loadEpisode(17, 'DragonBallSuper - Episode 17', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E17/v0/prog_index.m3u8')">
+    Episode 17
+</button>
+<button class="episode-button" onclick="loadEpisode(18, 'DragonBallSuper - Episode 18', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E18/v0/prog_index.m3u8')">
+    Episode 18
+</button>
+<button class="episode-button" onclick="loadEpisode(19, 'DragonBallSuper - Episode 19', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E19/v0/prog_index.m3u8')">
+    Episode 19
+</button>
+<button class="episode-button" onclick="loadEpisode(20, 'DragonBallSuper - Episode 20', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E20/v0/prog_index.m3u8')">
+    Episode 20
+</button>
+<button class="episode-button" onclick="loadEpisode(21, 'DragonBallSuper - Episode 21', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E21/v0/prog_index.m3u8')">
+    Episode 21
+</button>
+<button class="episode-button" onclick="loadEpisode(22, 'DragonBallSuper - Episode 22', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E22/v0/prog_index.m3u8')">
+    Episode 22
+</button>
+<button class="episode-button" onclick="loadEpisode(23, 'DragonBallSuper - Episode 23', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E23/v0/prog_index.m3u8')">
+    Episode 23
+</button>
+<button class="episode-button" onclick="loadEpisode(24, 'DragonBallSuper - Episode 24', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E24/v0/prog_index.m3u8')">
+    Episode 24
+</button>
+<button class="episode-button" onclick="loadEpisode(25, 'DragonBallSuper - Episode 25', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E25/v0/prog_index.m3u8')">
+    Episode 25
+</button>
+<button class="episode-button" onclick="loadEpisode(26, 'DragonBallSuper - Episode 26', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E26/v0/prog_index.m3u8')">
+    Episode 26
+</button>
+<button class="episode-button" onclick="loadEpisode(27, 'DragonBallSuper - Episode 27', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E27/v0/prog_index.m3u8')">
+    Episode 27
+</button>
+<button class="episode-button" onclick="loadEpisode(28, 'DragonBallSuper - Episode 28', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E28/v0/prog_index.m3u8')">
+    Episode 28
+</button>
+<button class="episode-button" onclick="loadEpisode(29, 'DragonBallSuper - Episode 29', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E29/v0/prog_index.m3u8')">
+    Episode 29
+</button>
+<button class="episode-button" onclick="loadEpisode(30, 'DragonBallSuper - Episode 30', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E30/v0/prog_index.m3u8')">
+    Episode 30
+</button>
+<button class="episode-button" onclick="loadEpisode(31, 'DragonBallSuper - Episode 31', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E31/v0/prog_index.m3u8')">
+    Episode 31
+</button>
+<button class="episode-button" onclick="loadEpisode(32, 'DragonBallSuper - Episode 32', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E32/v0/prog_index.m3u8')">
+    Episode 32
+</button>
+<button class="episode-button" onclick="loadEpisode(33, 'DragonBallSuper - Episode 33', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E33/v0/prog_index.m3u8')">
+    Episode 33
+</button>
+<button class="episode-button" onclick="loadEpisode(34, 'DragonBallSuper - Episode 34', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E34/v0/prog_index.m3u8')">
+    Episode 34
+</button>
+<button class="episode-button" onclick="loadEpisode(35, 'DragonBallSuper - Episode 35', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E35/v0/prog_index.m3u8')">
+    Episode 35
+</button>
+<button class="episode-button" onclick="loadEpisode(36, 'DragonBallSuper - Episode 36', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E36/v0/prog_index.m3u8')">
+    Episode 36
+</button>
+<button class="episode-button" onclick="loadEpisode(37, 'DragonBallSuper - Episode 37', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E37/v0/prog_index.m3u8')">
+    Episode 37
+</button>
+<button class="episode-button" onclick="loadEpisode(38, 'DragonBallSuper - Episode 38', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E38/v0/prog_index.m3u8')">
+    Episode 38
+</button>
+<button class="episode-button" onclick="loadEpisode(39, 'DragonBallSuper - Episode 39', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E39/v0/prog_index.m3u8')">
+    Episode 39
+</button>
+<button class="episode-button" onclick="loadEpisode(40, 'DragonBallSuper - Episode 40', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E40/v0/prog_index.m3u8')">
+    Episode 40
+</button>
+<button class="episode-button" onclick="loadEpisode(41, 'DragonBallSuper - Episode 41', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E41/v0/prog_index.m3u8')">
+    Episode 41
+</button>
+<button class="episode-button" onclick="loadEpisode(42, 'DragonBallSuper - Episode 42', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E42/v0/prog_index.m3u8')">
+    Episode 42
+</button>
+<button class="episode-button" onclick="loadEpisode(43, 'DragonBallSuper - Episode 43', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E43/v0/prog_index.m3u8')">
+    Episode 43
+</button>
+<button class="episode-button" onclick="loadEpisode(44, 'DragonBallSuper - Episode 44', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E44/v0/prog_index.m3u8')">
+    Episode 44
+</button>
+<button class="episode-button" onclick="loadEpisode(45, 'DragonBallSuper - Episode 45', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E45/v0/prog_index.m3u8')">
+    Episode 45
+</button>
+<button class="episode-button" onclick="loadEpisode(46, 'DragonBallSuper - Episode 46', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E46/v0/prog_index.m3u8')">
+    Episode 46
+</button>
+<button class="episode-button" onclick="loadEpisode(47, 'DragonBallSuper - Episode 47', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E47/v0/prog_index.m3u8')">
+    Episode 47
+</button>
+<button class="episode-button" onclick="loadEpisode(48, 'DragonBallSuper - Episode 48', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E48/v0/prog_index.m3u8')">
+    Episode 48
+</button>
+<button class="episode-button" onclick="loadEpisode(49, 'DragonBallSuper - Episode 49', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E49/v0/prog_index.m3u8')">
+    Episode 49
+</button>
+<button class="episode-button" onclick="loadEpisode(50, 'DragonBallSuper - Episode 50', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E50/v0/prog_index.m3u8')">
+    Episode 50
+</button>
+<button class="episode-button" onclick="loadEpisode(51, 'DragonBallSuper - Episode 51', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E51/v0/prog_index.m3u8')">
+    Episode 51
+</button>
+<button class="episode-button" onclick="loadEpisode(52, 'DragonBallSuper - Episode 52', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E52/v0/prog_index.m3u8')">
+    Episode 52
+</button>
+<button class="episode-button" onclick="loadEpisode(53, 'DragonBallSuper - Episode 53', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E53/v0/prog_index.m3u8')">
+    Episode 53
+</button>
+<button class="episode-button" onclick="loadEpisode(54, 'DragonBallSuper - Episode 54', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E54/v0/prog_index.m3u8')">
+    Episode 54
+</button>
+<button class="episode-button" onclick="loadEpisode(55, 'DragonBallSuper - Episode 55', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E55/v0/prog_index.m3u8')">
+    Episode 55
+</button>
+<button class="episode-button" onclick="loadEpisode(56, 'DragonBallSuper - Episode 56', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E56/v0/prog_index.m3u8')">
+    Episode 56
+</button>
+<button class="episode-button" onclick="loadEpisode(57, 'DragonBallSuper - Episode 57', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E57/v0/prog_index.m3u8')">
+    Episode 57
+</button>
+<button class="episode-button" onclick="loadEpisode(58, 'DragonBallSuper - Episode 58', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E58/v0/prog_index.m3u8')">
+    Episode 58
+</button>
+<button class="episode-button" onclick="loadEpisode(59, 'DragonBallSuper - Episode 59', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E59/v0/prog_index.m3u8')">
+    Episode 59
+</button>
+<button class="episode-button" onclick="loadEpisode(60, 'DragonBallSuper - Episode 60', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E60/v0/prog_index.m3u8')">
+    Episode 60
+</button>
+<button class="episode-button" onclick="loadEpisode(61, 'DragonBallSuper - Episode 61', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E61/v0/prog_index.m3u8')">
+    Episode 61
+</button>
+<button class="episode-button" onclick="loadEpisode(62, 'DragonBallSuper - Episode 62', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E62/v0/prog_index.m3u8')">
+    Episode 62
+</button>
+<button class="episode-button" onclick="loadEpisode(63, 'DragonBallSuper - Episode 63', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E63/v0/prog_index.m3u8')">
+    Episode 63
+</button>
+<button class="episode-button" onclick="loadEpisode(64, 'DragonBallSuper - Episode 64', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E64/v0/prog_index.m3u8')">
+    Episode 64
+</button>
+<button class="episode-button" onclick="loadEpisode(65, 'DragonBallSuper - Episode 65', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E65/v0/prog_index.m3u8')">
+    Episode 65
+</button>
+<button class="episode-button" onclick="loadEpisode(66, 'DragonBallSuper - Episode 66', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E66/v0/prog_index.m3u8')">
+    Episode 66
+</button>
+<button class="episode-button" onclick="loadEpisode(67, 'DragonBallSuper - Episode 67', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E67/v0/prog_index.m3u8')">
+    Episode 67
+</button>
+<button class="episode-button" onclick="loadEpisode(68, 'DragonBallSuper - Episode 68', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E68/v0/prog_index.m3u8')">
+    Episode 68
+</button>
+<button class="episode-button" onclick="loadEpisode(69, 'DragonBallSuper - Episode 69', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E69/v0/prog_index.m3u8')">
+    Episode 69
+</button>
+<button class="episode-button" onclick="loadEpisode(70, 'DragonBallSuper - Episode 70', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E70/v0/prog_index.m3u8')">
+    Episode 70
+</button>
+<button class="episode-button" onclick="loadEpisode(71, 'DragonBallSuper - Episode 71', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E71/v0/prog_index.m3u8')">
+    Episode 71
+</button>
+<button class="episode-button" onclick="loadEpisode(72, 'DragonBallSuper - Episode 72', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E72/v0/prog_index.m3u8')">
+    Episode 72
+</button>
+<button class="episode-button" onclick="loadEpisode(73, 'DragonBallSuper - Episode 73', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E73/v0/prog_index.m3u8')">
+    Episode 73
+</button>
+<button class="episode-button" onclick="loadEpisode(74, 'DragonBallSuper - Episode 74', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E74/v0/prog_index.m3u8')">
+    Episode 74
+</button>
+<button class="episode-button" onclick="loadEpisode(75, 'DragonBallSuper - Episode 75', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E75/v0/prog_index.m3u8')">
+    Episode 75
+</button>
+<button class="episode-button" onclick="loadEpisode(76, 'DragonBallSuper - Episode 76', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E76/v0/prog_index.m3u8')">
+    Episode 76
+</button>
+<button class="episode-button" onclick="loadEpisode(77, 'DragonBallSuper - Episode 77', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E77/v0/prog_index.m3u8')">
+    Episode 77
+</button>
+<button class="episode-button" onclick="loadEpisode(78, 'DragonBallSuper - Episode 78', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E78/v0/prog_index.m3u8')">
+    Episode 78
+</button>
+<button class="episode-button" onclick="loadEpisode(79, 'DragonBallSuper - Episode 79', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E79/v0/prog_index.m3u8')">
+    Episode 79
+</button>
+<button class="episode-button" onclick="loadEpisode(80, 'DragonBallSuper - Episode 80', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E80/v0/prog_index.m3u8')">
+    Episode 80
+</button>
+<button class="episode-button" onclick="loadEpisode(81, 'DragonBallSuper - Episode 81', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E81/v0/prog_index.m3u8')">
+    Episode 81
+</button>
+<button class="episode-button" onclick="loadEpisode(82, 'DragonBallSuper - Episode 82', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E82/v0/prog_index.m3u8')">
+    Episode 82
+</button>
+<button class="episode-button" onclick="loadEpisode(83, 'DragonBallSuper - Episode 83', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E83/v0/prog_index.m3u8')">
+    Episode 83
+</button>
+<button class="episode-button" onclick="loadEpisode(84, 'DragonBallSuper - Episode 84', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E84/v0/prog_index.m3u8')">
+    Episode 84
+</button>
+<button class="episode-button" onclick="loadEpisode(85, 'DragonBallSuper - Episode 85', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E85/v0/prog_index.m3u8')">
+    Episode 85
+</button>
+<button class="episode-button" onclick="loadEpisode(86, 'DragonBallSuper - Episode 86', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E86/v0/prog_index.m3u8')">
+    Episode 86
+</button>
+<button class="episode-button" onclick="loadEpisode(87, 'DragonBallSuper - Episode 87', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E87/v0/prog_index.m3u8')">
+    Episode 87
+</button>
+<button class="episode-button" onclick="loadEpisode(88, 'DragonBallSuper - Episode 88', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E88/v0/prog_index.m3u8')">
+    Episode 88
+</button>
+<button class="episode-button" onclick="loadEpisode(89, 'DragonBallSuper - Episode 89', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E89/v0/prog_index.m3u8')">
+    Episode 89
+</button>
+<button class="episode-button" onclick="loadEpisode(90, 'DragonBallSuper - Episode 90', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E90/v0/prog_index.m3u8')">
+    Episode 90
+</button>
+<button class="episode-button" onclick="loadEpisode(91, 'DragonBallSuper - Episode 91', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E91/v0/prog_index.m3u8')">
+    Episode 91
+</button>
+<button class="episode-button" onclick="loadEpisode(92, 'DragonBallSuper - Episode 92', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E92/v0/prog_index.m3u8')">
+    Episode 92
+</button>
+<button class="episode-button" onclick="loadEpisode(93, 'DragonBallSuper - Episode 93', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E93/v0/prog_index.m3u8')">
+    Episode 93
+</button>
+<button class="episode-button" onclick="loadEpisode(94, 'DragonBallSuper - Episode 94', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E94/v0/prog_index.m3u8')">
+    Episode 94
+</button>
+<button class="episode-button" onclick="loadEpisode(95, 'DragonBallSuper - Episode 95', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E95/v0/prog_index.m3u8')">
+    Episode 95
+</button>
+<button class="episode-button" onclick="loadEpisode(96, 'DragonBallSuper - Episode 96', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E96/v0/prog_index.m3u8')">
+    Episode 96
+</button>
+<button class="episode-button" onclick="loadEpisode(97, 'DragonBallSuper - Episode 97', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E97/v0/prog_index.m3u8')">
+    Episode 97
+</button>
+<button class="episode-button" onclick="loadEpisode(98, 'DragonBallSuper - Episode 98', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E98/v0/prog_index.m3u8')">
+    Episode 98
+</button>
+<button class="episode-button" onclick="loadEpisode(99, 'DragonBallSuper - Episode 99', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E99/v0/prog_index.m3u8')">
+    Episode 99
+</button>
+<button class="episode-button" onclick="loadEpisode(100, 'DragonBallSuper - Episode 100', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E100/v0/prog_index.m3u8')">
+    Episode 100
+</button>
+<button class="episode-button" onclick="loadEpisode(101, 'DragonBallSuper - Episode 101', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E101/v0/prog_index.m3u8')">
+    Episode 101
+</button>
+<button class="episode-button" onclick="loadEpisode(102, 'DragonBallSuper - Episode 102', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E102/v0/prog_index.m3u8')">
+    Episode 102
+</button>
+<button class="episode-button" onclick="loadEpisode(103, 'DragonBallSuper - Episode 103', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E103/v0/prog_index.m3u8')">
+    Episode 103
+</button>
+<button class="episode-button" onclick="loadEpisode(104, 'DragonBallSuper - Episode 104', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E104/v0/prog_index.m3u8')">
+    Episode 104
+</button>
+<button class="episode-button" onclick="loadEpisode(105, 'DragonBallSuper - Episode 105', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E105/v0/prog_index.m3u8')">
+    Episode 105
+</button>
+<button class="episode-button" onclick="loadEpisode(106, 'DragonBallSuper - Episode 106', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E106/v0/prog_index.m3u8')">
+    Episode 106
+</button>
+<button class="episode-button" onclick="loadEpisode(107, 'DragonBallSuper - Episode 107', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E107/v0/prog_index.m3u8')">
+    Episode 107
+</button>
+<button class="episode-button" onclick="loadEpisode(108, 'DragonBallSuper - Episode 108', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E108/v0/prog_index.m3u8')">
+    Episode 108
+</button>
+<button class="episode-button" onclick="loadEpisode(109, 'DragonBallSuper - Episode 109', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E109/v0/prog_index.m3u8')">
+    Episode 109
+</button>
+<button class="episode-button" onclick="loadEpisode(110, 'DragonBallSuper - Episode 110', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E110/v0/prog_index.m3u8')">
+    Episode 110
+</button>
+<button class="episode-button" onclick="loadEpisode(111, 'DragonBallSuper - Episode 111', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E111/v0/prog_index.m3u8')">
+    Episode 111
+</button>
+<button class="episode-button" onclick="loadEpisode(112, 'DragonBallSuper - Episode 112', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E112/v0/prog_index.m3u8')">
+    Episode 112
+</button>
+<button class="episode-button" onclick="loadEpisode(113, 'DragonBallSuper - Episode 113', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E113/v0/prog_index.m3u8')">
+    Episode 113
+</button>
+<button class="episode-button" onclick="loadEpisode(114, 'DragonBallSuper - Episode 114', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E114/v0/prog_index.m3u8')">
+    Episode 114
+</button>
+<button class="episode-button" onclick="loadEpisode(115, 'DragonBallSuper - Episode 115', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E115/v0/prog_index.m3u8')">
+    Episode 115
+</button>
+<button class="episode-button" onclick="loadEpisode(116, 'DragonBallSuper - Episode 116', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E116/v0/prog_index.m3u8')">
+    Episode 116
+</button>
+<button class="episode-button" onclick="loadEpisode(117, 'DragonBallSuper - Episode 117', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E117/v0/prog_index.m3u8')">
+    Episode 117
+</button>
+<button class="episode-button" onclick="loadEpisode(118, 'DragonBallSuper - Episode 118', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E118/v0/prog_index.m3u8')">
+    Episode 118
+</button>
+<button class="episode-button" onclick="loadEpisode(119, 'DragonBallSuper - Episode 119', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E119/v0/prog_index.m3u8')">
+    Episode 119
+</button>
+<button class="episode-button" onclick="loadEpisode(120, 'DragonBallSuper - Episode 120', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E120/v0/prog_index.m3u8')">
+    Episode 120
+</button>
+<button class="episode-button" onclick="loadEpisode(121, 'DragonBallSuper - Episode 121', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E121/v0/prog_index.m3u8')">
+    Episode 121
+</button>
+<button class="episode-button" onclick="loadEpisode(122, 'DragonBallSuper - Episode 122', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E122/v0/prog_index.m3u8')">
+    Episode 122
+</button>
+<button class="episode-button" onclick="loadEpisode(123, 'DragonBallSuper - Episode 123', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E123/v0/prog_index.m3u8')">
+    Episode 123
+</button>
+<button class="episode-button" onclick="loadEpisode(124, 'DragonBallSuper - Episode 124', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E124/v0/prog_index.m3u8')">
+    Episode 124
+</button>
+<button class="episode-button" onclick="loadEpisode(125, 'DragonBallSuper - Episode 125', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E125/v0/prog_index.m3u8')">
+    Episode 125
+</button>
+<button class="episode-button" onclick="loadEpisode(126, 'DragonBallSuper - Episode 126', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E126/v0/prog_index.m3u8')">
+    Episode 126
+</button>
+<button class="episode-button" onclick="loadEpisode(127, 'DragonBallSuper - Episode 127', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E127/v0/prog_index.m3u8')">
+    Episode 127
+</button>
+<button class="episode-button" onclick="loadEpisode(128, 'DragonBallSuper - Episode 128', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E128/v0/prog_index.m3u8')">
+    Episode 128
+</button>
+<button class="episode-button" onclick="loadEpisode(129, 'DragonBallSuper - Episode 129', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E129/v0/prog_index.m3u8')">
+    Episode 129
+</button>
+<button class="episode-button" onclick="loadEpisode(130, 'DragonBallSuper - Episode 130', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E130/v0/prog_index.m3u8')">
+    Episode 130
+</button>
+<button class="episode-button" onclick="loadEpisode(131, 'DragonBallSuper - Episode 131', 'https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E131/v0/prog_index.m3u8')">
+    Episode 131
+</button>
+            
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <span>Copyright M-ShahTV</span>
+        <span>All Rights Reserved</span>
+    </div>
+    
+    <script>
+        // Initialize JWPlayer
+        let player;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            player = jwplayer("vplayer");
+            player.setup({
+                sources: [{
+                    file: "https://vodnew.eu-central-1.linodeobjects.com/Jan23/DragonBallSuper/E01/v0/prog_index.m3u8"
+                }],
+                image: "https://w0.peakpx.com/wallpaper/242/16/HD-wallpaper-dragon-ball-super-super-hero-poster-reveals-new-poster-dragon-ball-super-movie.jpg", // Added poster
+                width: "100%",
+                height: "100%",
+                autostart: false, // Disabled autoplay
+                mute: false, // Unmuted
+                stretching: "uniform",
+                hlshtml: true,
+                primary: "html5",
+                playbackRateControls: true,
+                playbackRates: [0.25, 0.5, 1, 1.5, 2.0],
+                skin: {
+                    name: "alaska"
+                },
+                tracks: [{
+                    file: "https://vod-tapmad.akamaized.net//BolEnt/Dastaan/E01/master.m3u8",
+                    label: "English",
+                    kind: "captions",
+                    "default": true
+                }],
+                captions: {
+                    color: '#FFFFFF',
+                    fontSize: 16,
+                    fontFamily: "Verdana",
+                    backgroundOpacity: 0,
+                    edgeStyle: 'raised',
+                    fontOpacity: 90
+                }
+            });
+
+            player.on('error', function(evt) {
+                console.error('Player error:', evt.message);
+            });
+            
+            player.on('play', function() {
+                document.getElementById('playPauseIcon').className = 'fas fa-pause';
+            });
+            
+            player.on('pause', function() {
+                document.getElementById('playPauseIcon').className = 'fas fa-play';
+            });
+            
+            // Add keyboard controls
+            document.addEventListener('keydown', function(e) {
+                if (!player) return;
+                
+                switch(e.key) {
+                    case ' ':
+                    case 'k':
+                        e.preventDefault();
+                        playPause();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        toggleFullscreen();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        rwd5s();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        fwd5s();
+                        break;
+                    case 'j':
+                        e.preventDefault();
+                        rwd10s();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        fwd10s();
+                        break;
+                }
+            });
+        });
+        
+        // Video control functions
+        function playPause() {
+            if (!player) return;
+            
+            if (player.getState() === 'playing') {
+                player.pause();
+                document.getElementById('playPauseIcon').className = 'fas fa-play';
+            } else {
+                player.play();
+                document.getElementById('playPauseIcon').className = 'fas fa-pause';
+            }
+        }
+        
+        function rwd5s() {
+            if (!player) return;
+            player.seek(Math.max(0, player.getPosition() - 5));
+        }
+        
+        function fwd5s() {
+            if (!player) return;
+            player.seek(player.getPosition() + 5);
+        }
+        
+        function rwd10s() {
+            if (!player) return;
+            player.seek(Math.max(0, player.getPosition() - 10));
+        }
+        
+        function fwd10s() {
+            if (!player) return;
+            player.seek(player.getPosition() + 10);
+        }
+        
+        function rwd15s() {
+            if (!player) return;
+            player.seek(Math.max(0, player.getPosition() - 15));
+        }
+        
+        function fwd15s() {
+            if (!player) return;
+            player.seek(player.getPosition() + 15);
+        }
+        
+        function toggleFullscreen() {
+            if (!player) return;
+            const container = player.getContainer();
+            
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+            }
+        }
+        
+        // Episode loading function
+        function loadEpisode(episodeNumber, episodeTitle, videoUrl) {
+            if (!player) return;
+            
+            // Update the video source
+            player.load([{
+                file: videoUrl
+            }]);
+            
+            // Update the drama name
+            document.getElementById('dramaName').textContent = episodeTitle;
+            
+            // Update active episode button
+            const buttons = document.querySelectorAll('.episode-button');
+            buttons.forEach(button => button.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Play the new episode automatically
+            player.play();
+            
+            console.log(`Loading ${episodeTitle}`);
+        }
+    </script>
+</body>
+</html>
