@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+    <script src='https://ssl.p.jwpcdn.com/player/v/8.26.9/jwplayer.js'></script>
+    <script>jwplayer.key="Y8nORY7CUY5RnlN/f8onh+AXI1ZWodkujMJAXBwpcAnDG5N4";</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #000;
+            color: #aaa;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        /* JWPlayer container */
+        .jwplayer-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 40vh;
+            z-index: 1000;
+            background-color: #000;
+        }
+        
+        /* Controls container */
+        .controls-container {
+            position: fixed;
+            top: 40vh;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 15px 0;
+            z-index: 999;
+            text-align: center;
+        }
+        
+        .button-controls {
+            display: inline-block;
+            padding: 12px 18px;
+            font-size: 16px;
+            background-color: #330066;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 8px;
+            min-width: 80px;
+        }
+        
+        .button-controls:hover {
+            background-color: #220048;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .button-controls:active {
+            background-color: #220048;
+            transform: translateY(1px);
+        }
+        
+        /* Drama name */
+        .drama-name {
+            position: fixed;
+            top: calc(40vh + 70px);
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 10px 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 998;
+        }
+        
+        /* Episodes container */
+        .episodes-container {
+            padding: 10px 0;
+            margin-top: 20vh; /* Space for the fixed video player, controls and drama name */
+            margin-bottom: 50px; /* Space for the footer */
+            display: flex;
+            justify-content: center;
+        }
+        
+        .episodes-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Single column for full-width buttons */
+            gap: 15px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .episode-button {
+            background-color: #000;
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            font-size: 16px;
+            margin: 0;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+            box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff0000;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .episode-button:hover {
+            background-color: #ff0000;
+            box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;
+            transform: scale(1.05);
+        }
+        
+        .episode-button.active {
+           background-color: #ff0000; 
+           box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;  
+        }
+        
+        /* Footer */
+        .footer {
+            padding: 10px 0;
+            background-color: #000;
+            color: #aaa;
+            width: 100%;
+            position: relative;
+            z-index: 1001;
+            text-align: center;
+        }
+        
+        /* Loading animation */
+        .loading-animation {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+            margin: 20px 0;
+        }
+        
+        .cube {
+            width: 50px;
+            height: 50px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate 10s infinite linear;
+        }
+        
+        .cube div {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.7;
+        }
+        
+        .front {
+            transform: translateZ(25px);
+            background-color: #12524B;
+        }
+        
+        .back {
+            transform: translateZ(-25px) rotateY(180deg);
+            background-color: #12524B;
+        }
+        
+        .right {
+            transform: rotateY(-270deg) translateX(25px);
+            transform-origin: top right;
+            background-color: #83C6F3;
+        }
+        
+        .left {
+            transform: rotateY(270deg) translateX(-25px);
+            transform-origin: center left;
+            background-color: #83C6F3;
+        }
+        
+        .top {
+            transform: rotateX(-270deg) translateY(-25px);
+            transform-origin: top center;
+            background-color: #FC0;
+        }
+        
+        .bottom {
+            transform: rotateX(270deg) translateY(25px);
+            transform-origin: bottom center;
+            background-color: #FC0;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotateX(0deg) rotateY(0deg); }
+            to { transform: rotateX(360deg) rotateY(360deg); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .jwplayer-container {
+                height: 35vh;
+            }
+            
+            .controls-container {
+                top: 35vh;
+            }
+            
+            .drama-name {
+                top: calc(35vh + 70px);
+            }
+            
+            .episodes-container {
+                margin-top: 25vh;
+            }
+            
+            .button-controls {
+                padding: 10px 14px;
+                font-size: 14px;
+                min-width: 70px;
+                margin: 0 5px;
+            }
+            
+            .episodes-grid {
+                gap: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .jwplayer-container {
+                height: 30vh;
+            }
+            
+            .controls-container {
+                top: 30vh;
+            }
+            
+            .drama-name {
+    position: fixed;
+    top: calc(40vh + 70px);
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #00ff00; /* Green color */
+    font-size: 20px;
+    font-weight: bold;
+    padding: 10px 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 998;
+}
+
+/* Responsive adjustments for drama name */
+@media (max-width: 768px) {
+    .drama-name {
+        top: calc(35vh + 70px);
+    }
+}
+
+@media (max-width: 480px) {
+    .drama-name {
+        top: calc(30vh + 50px);
+    }
+}
+            
+            .episodes-container {
+                margin-top: 27vh;
+            }
+            
+            .button-controls {
+                padding: 8px 10px;
+                font-size: 12px;
+                min-width: 40px;
+                margin: 0 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- JWPlayer container -->
+    <div class="jwplayer-container">
+        <div id='vplayer'></div>
+    </div>
+    
+    <!-- Controls container -->
+    <div class="controls-container">
+        <button type="button" class="button-controls" onclick="rwd15s()">
+            <i class="fas fa-fast-backward"></i> 15s
+        </button>
+        <button class="button-controls" onclick="rwd5s()">
+            <i class="fas fa-step-backward"></i> 5s
+        </button>
+        <button class="button-controls" onclick="playPause()">
+            <i class="fas fa-play" id="playPauseIcon"></i>
+        </button>
+        <button class="button-controls" onclick="toggleFullscreen()">
+            <i class="fas fa-expand"></i>
+        </button>
+        <button class="button-controls" onclick="fwd5s()">
+            5s <i class="fas fa-step-forward"></i>
+        </button>
+        <button class="button-controls" onclick="fwd15s()">
+            15s <i class="fas fa-fast-forward"></i>
+        </button>
+    </div>
+    
+    <!-- Drama name -->
+    <div class="drama-name" id="dramaName">
+       
+    </div>
+    
+    <!-- Loading animation -->
+    <div class="loading-animation">
+        <div class="cube">
+            <div class="front"></div>
+            <div class="back"></div>
+            <div class="right"></div>
+            <div class="left"></div>
+            <div class="top"></div>
+            <div class="bottom"></div>
+        </div>
+    </div>
+    
+    <!-- Episodes container -->
+    <div class="episodes-container">
+        <div class="episodes-grid">
+        
+        
+        
+        
+            <button class="episode-button" onclick="loadEpisode(1, 'Ben10OmniverseS8 - Episode 01', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E01/master.m3u8')">
+    Episode 01
+</button>
+<button class="episode-button" onclick="loadEpisode(2, 'Ben10OmniverseS8 - Episode 02', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E02/master.m3u8')">
+    Episode 02
+</button>
+<button class="episode-button" onclick="loadEpisode(3, 'Ben10OmniverseS8 - Episode 03', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E03/master.m3u8')">
+    Episode 03
+</button>
+<button class="episode-button" onclick="loadEpisode(4, 'Ben10OmniverseS8 - Episode 04', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E04/master.m3u8')">
+    Episode 04
+</button>
+<button class="episode-button" onclick="loadEpisode(5, 'Ben10OmniverseS8 - Episode 05', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E05/master.m3u8')">
+    Episode 05
+</button>
+<button class="episode-button" onclick="loadEpisode(6, 'Ben10OmniverseS8 - Episode 06', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E06/master.m3u8')">
+    Episode 06
+</button>
+<button class="episode-button" onclick="loadEpisode(7, 'Ben10OmniverseS8 - Episode 07', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E07/master.m3u8')">
+    Episode 07
+</button>
+<button class="episode-button" onclick="loadEpisode(8, 'Ben10OmniverseS8 - Episode 08', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E08/master.m3u8')">
+    Episode 08
+</button>
+<button class="episode-button" onclick="loadEpisode(9, 'Ben10OmniverseS8 - Episode 09', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E09/master.m3u8')">
+    Episode 09
+</button>
+<button class="episode-button" onclick="loadEpisode(10, 'Ben10OmniverseS8 - Episode 10', 'https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E10/master.m3u8')">
+    Episode 10
+</button>
+
+
+
+
+            
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <span>Copyright M-ShahTV</span>
+        <span>All Rights Reserved</span>
+    </div>
+    
+    <script>
+        // Initialize JWPlayer
+        let player;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            player = jwplayer("vplayer");
+            player.setup({
+                sources: [{
+                    file: "https://vod-tapmad.akamaized.net/Dec22/Ben10Omniverse/S8/E10/master.m3u8"
+                }],
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQc1K-Fvd1gyHLUSLGnZgTMpUJGNX3zMbDQfuCBDIgAtP4Deuzg7w0nPkM&s=10", // Added poster
+                width: "100%",
+                height: "100%",
+                autostart: false, // Disabled autoplay
+                mute: false, // Unmuted
+                stretching: "uniform",
+                hlshtml: true,
+                primary: "html5",
+                playbackRateControls: true,
+                playbackRates: [0.25, 0.5, 1, 1.5, 2.0],
+                skin: {
+                    name: "alaska"
+                },
+                tracks: [{
+                    file: "https://vod-tapmad.akamaized.net//BolEnt/Dastaan/E01/master.m3u8",
+                    label: "English",
+                    kind: "captions",
+                    "default": true
+                }],
+                captions: {
+                    color: '#FFFFFF',
+                    fontSize: 16,
+                    fontFamily: "Verdana",
+                    backgroundOpacity: 0,
+                    edgeStyle: 'raised',
+                    fontOpacity: 90
+                }
+            });
+
+            player.on('error', function(evt) {
+                console.error('Player error:', evt.message);
+            });
+            
+            player.on('play', function() {
+                document.getElementById('playPauseIcon').className = 'fas fa-pause';
+            });
+            
+            player.on('pause', function() {
+                document.getElementById('playPauseIcon').className = 'fas fa-play';
+            });
+            
+            // Add keyboard controls
+            document.addEventListener('keydown', function(e) {
+                if (!player) return;
+                
+                switch(e.key) {
+                    case ' ':
+                    case 'k':
+                        e.preventDefault();
+                        playPause();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        toggleFullscreen();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        rwd5s();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        fwd5s();
+                        break;
+                    case 'j':
+                        e.preventDefault();
+                        rwd10s();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        fwd10s();
+                        break;
+                }
+            });
+        });
+        
+        // Video control functions
+        function playPause() {
+            if (!player) return;
+            
+            if (player.getState() === 'playing') {
+                player.pause();
+                document.getElementById('playPauseIcon').className = 'fas fa-play';
+            } else {
+                player.play();
+                document.getElementById('playPauseIcon').className = 'fas fa-pause';
+            }
+        }
+        
+        function rwd5s() {
+            if (!player) return;
+            player.seek(Math.max(0, player.getPosition() - 5));
+        }
+        
+        function fwd5s() {
+            if (!player) return;
+            player.seek(player.getPosition() + 5);
+        }
+        
+        function rwd10s() {
+            if (!player) return;
+            player.seek(Math.max(0, player.getPosition() - 10));
+        }
+        
+        function fwd10s() {
+            if (!player) return;
+            player.seek(player.getPosition() + 10);
+        }
+        
+        function rwd15s() {
+            if (!player) return;
+            player.seek(Math.max(0, player.getPosition() - 15));
+        }
+        
+        function fwd15s() {
+            if (!player) return;
+            player.seek(player.getPosition() + 15);
+        }
+        
+        function toggleFullscreen() {
+            if (!player) return;
+            const container = player.getContainer();
+            
+            if (container.requestFullscreen) {
+                container.requestFullscreen();
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            } else if (container.mozRequestFullScreen) {
+                container.mozRequestFullScreen();
+            } else if (container.msRequestFullscreen) {
+                container.msRequestFullscreen();
+            }
+        }
+        
+        // Episode loading function
+        function loadEpisode(episodeNumber, episodeTitle, videoUrl) {
+            if (!player) return;
+            
+            // Update the video source
+            player.load([{
+                file: videoUrl
+            }]);
+            
+            // Update the drama name
+            document.getElementById('dramaName').textContent = episodeTitle;
+            
+            // Update active episode button
+            const buttons = document.querySelectorAll('.episode-button');
+            buttons.forEach(button => button.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Play the new episode automatically
+            player.play();
+            
+            console.log(`Loading ${episodeTitle}`);
+        }
+    </script>
+</body>
+</html>
